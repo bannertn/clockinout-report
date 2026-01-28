@@ -1,0 +1,5 @@
+{
+  "name": "WarmSync Timesheet",
+  "description": "A warm-toned, automated monthly timesheet generator that syncs with Google Sheets (CSV) and produces A4 printable reports.",
+  "requestFramePermissions": []
+}

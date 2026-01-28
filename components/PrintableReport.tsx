@@ -1,0 +1,96 @@
+import React from 'react';
+import { MonthlyReport } from '../types';
+
+interface PrintableReportProps {
+  report: MonthlyReport;
+  userName: string;
+}
+
+export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userName }) => {
+  const currentDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  return (
+    <div className="bg-white text-black p-8 max-w-[210mm] mx-auto min-h-[297mm] shadow-lg print:shadow-none print:w-full print:max-w-none">
+      {/* Header */}
+      <div className="border-b-2 border-orange-500 pb-4 mb-6 flex justify-between items-end">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">月度工時報表</h1>
+          <p className="text-gray-500 mt-1">Monthly Timesheet Report</p>
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-semibold">{userName}</p>
+          <p className="text-sm text-gray-500">列印日期: {currentDate}</p>
+        </div>
+      </div>
+
+      {/* Summary Box */}
+      <div className="bg-orange-50 border border-orange-100 rounded-lg p-6 mb-8 flex justify-between items-center print:bg-gray-50 print:border-gray-200">
+        <div>
+            <p className="text-sm text-gray-500 uppercase tracking-wide">月份</p>
+            <p className="text-2xl font-bold text-orange-900">{report.month}</p>
+        </div>
+        <div>
+            <p className="text-sm text-gray-500 uppercase tracking-wide">總工時</p>
+            <p className="text-2xl font-bold text-orange-900">{report.totalHours.toFixed(2)} <span className="text-sm font-normal text-gray-600">小時</span></p>
+        </div>
+        <div>
+            <p className="text-sm text-gray-500 uppercase tracking-wide">時薪</p>
+            <p className="text-2xl font-bold text-orange-900">${report.hourlyRate}</p>
+        </div>
+        <div className="bg-white px-4 py-2 rounded shadow-sm print:shadow-none print:border print:border-gray-300">
+            <p className="text-sm text-gray-500 uppercase tracking-wide">本月應付薪資</p>
+            <p className="text-3xl font-extrabold text-red-600">${Math.round(report.totalPay).toLocaleString()}</p>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-hidden rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
+          <thead className="bg-orange-100 print:bg-gray-100">
+            <tr>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">日期</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">上班時間</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">下班時間</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider">休息 (分)</th>
+              <th className="px-4 py-3 text-right font-bold text-gray-700 uppercase tracking-wider">工時</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">備註</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 bg-white">
+            {report.shifts.map((shift, index) => (
+              <tr key={shift.id} className={index % 2 === 0 ? 'bg-white' : 'bg-orange-50/30 print:bg-gray-50'}>
+                <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">{shift.date}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-gray-600">{shift.startTime}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-gray-600">{shift.endTime}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-center text-gray-600">{shift.breakMinutes}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-right font-bold text-gray-900">{shift.totalHours}</td>
+                <td className="px-4 py-3 text-gray-500 truncate max-w-[200px]">{shift.notes}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot className="bg-gray-50 font-bold border-t border-gray-200">
+             <tr>
+                <td colSpan={4} className="px-4 py-3 text-right text-gray-700">總計</td>
+                <td className="px-4 py-3 text-right text-orange-700">{report.totalHours.toFixed(2)}</td>
+                <td></td>
+             </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      {/* Signature Section */}
+      <div className="mt-16 pt-8 border-t border-dashed border-gray-300 flex justify-between items-end print:flex">
+        <div className="w-1/3">
+          <p className="mb-8 border-b border-gray-400 pb-2">員工簽名 (Employee)</p>
+        </div>
+        <div className="w-1/3">
+          <p className="mb-8 border-b border-gray-400 pb-2">主管簽核 (Manager)</p>
+        </div>
+      </div>
+      
+      <div className="mt-8 text-center text-xs text-gray-400">
+         Generated by WarmSync Timesheet
+      </div>
+    </div>
+  );
+};
