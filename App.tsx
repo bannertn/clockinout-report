@@ -15,13 +15,14 @@ import {
   Code
 } from 'lucide-react';
 import { AppState, MonthlyReport, Shift } from './types';
-import { parseCSV, fetchGASData } from './services/dataService';
+import { parseCSV, fetchGASData, groupShiftsByDate } from './services/dataService';
 import { generateMonthlyInsight } from './services/geminiService';
 import { PrintableReport } from './components/PrintableReport';
 
 // Default demo data
 const DEMO_CSV = `Date,Start Time,End Time,Break (min),Notes
-2023-10-01,09:00,18:00,60,Regular shift
+2023-10-01,09:00,12:00,0,Morning shift
+2023-10-01,13:00,18:00,0,Afternoon shift
 2023-10-02,09:00,18:30,60,Overtime 30m
 2023-10-03,09:15,18:00,60,Late arrival
 2023-10-04,09:00,17:00,0,Early leave, no break
@@ -31,7 +32,7 @@ const DEMO_CSV = `Date,Start Time,End Time,Break (min),Notes
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.SETUP);
   const [gasUrl, setGasUrl] = useState('');
-  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [rawShifts, setRawShifts] = useState<Shift[]>([]);
   const [hourlyRate, setHourlyRate] = useState<number>(180); // Default TW hourly rate
   const [userName, setUserName] = useState('王小明');
   const [loading, setLoading] = useState(false);
@@ -70,35 +71,38 @@ const App: React.FC = () => {
     localStorage.setItem('warmSync_hourlyRate', hourlyRate.toString());
   }, [userName, hourlyRate]);
 
-  // Derived Data
+  // Derived Data with Grouping Logic
   const report: MonthlyReport | null = useMemo(() => {
-    if (shifts.length === 0) return null;
+    if (rawShifts.length === 0) return null;
     try {
-      const totalHours = shifts.reduce((acc, curr) => acc + curr.totalHours, 0);
+      // Group raw shifts by date to handle multiple punches per day
+      const dailyShifts = groupShiftsByDate(rawShifts);
+
+      const totalHours = dailyShifts.reduce((acc, curr) => acc + curr.totalHours, 0);
       const totalPay = Math.floor(totalHours * hourlyRate);
       
       // Determine month from first shift
-      const month = shifts[0].date.substring(0, 7); 
+      const month = dailyShifts[0].date.substring(0, 7); 
 
       return {
         month,
         totalHours,
         hourlyRate,
         totalPay,
-        shifts
+        shifts: dailyShifts
       };
     } catch (e) {
       console.error(e);
       return null;
     }
-  }, [shifts, hourlyRate]);
+  }, [rawShifts, hourlyRate]);
 
   const performFetch = async (url: string, isAuto = false) => {
     setLoading(true);
     setError(null);
     try {
       const data = await fetchGASData(url);
-      setShifts(data);
+      setRawShifts(data);
       setAppState(AppState.DASHBOARD);
       // Save valid URL to local storage
       localStorage.setItem('warmSync_gasUrl', url);
@@ -121,7 +125,7 @@ const App: React.FC = () => {
 
   const handleUseDemo = () => {
     const demoData = parseCSV(DEMO_CSV);
-    setShifts(demoData);
+    setRawShifts(demoData);
     setAppState(AppState.DASHBOARD);
   };
 
@@ -152,7 +156,7 @@ const App: React.FC = () => {
           WarmSync <span className="text-orange-600">Timesheet</span>
         </h1>
         <p className="text-lg text-orange-800/70 max-w-xl mx-auto">
-          透過 Google Apps Script 讀取資料，自動生成精美的 A4 月報表。
+          透過 Google Apps Script 讀取資料，自動合併每日打卡紀錄，生成精美的 A4 月報表。
         </p>
       </div>
 
@@ -353,18 +357,18 @@ const App: React.FC = () => {
               <thead>
                 <tr className="text-gray-500 border-b border-gray-100 text-sm">
                   <th className="px-6 py-3 font-medium">日期</th>
-                  <th className="px-6 py-3 font-medium">時間</th>
-                  <th className="px-6 py-3 font-medium text-right">時數</th>
+                  <th className="px-6 py-3 font-medium">時間記錄 (上班-下班)</th>
+                  <th className="px-6 py-3 font-medium text-right">總工時</th>
                   <th className="px-6 py-3 font-medium">備註</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {report.shifts.map((shift) => (
                   <tr key={shift.id} className="hover:bg-orange-50/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-gray-800">{shift.date}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                      {shift.startTime} - {shift.endTime} 
-                      {shift.breakMinutes > 0 && <span className="text-xs text-gray-400 ml-2">(休 {shift.breakMinutes}分)</span>}
+                    <td className="px-6 py-4 font-medium text-gray-800 whitespace-nowrap">{shift.date}</td>
+                    <td className="px-6 py-4 text-gray-600 font-mono text-sm">
+                      {shift.startTime}
+                      {shift.breakMinutes > 0 && <span className="text-xs text-gray-400 ml-2 block sm:inline">(休 {shift.breakMinutes}分)</span>}
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-orange-600">{shift.totalHours}</td>
                     <td className="px-6 py-4 text-gray-500 text-sm">{shift.notes}</td>

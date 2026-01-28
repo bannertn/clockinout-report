@@ -16,6 +16,48 @@ const calculateHours = (date: string, startTime: string, endTime: string, breakM
     return parseFloat(((diffMs / (1000 * 60 * 60)) - (breakMinutes / 60)).toFixed(2));
 };
 
+// Group shifts by date to consolidate multiple entries into one daily row
+export const groupShiftsByDate = (shifts: Shift[]): Shift[] => {
+  const groups: { [key: string]: Shift[] } = {};
+  
+  // 1. Group by date
+  shifts.forEach(s => {
+    if (!groups[s.date]) groups[s.date] = [];
+    groups[s.date].push(s);
+  });
+
+  // 2. Aggregate and Sort
+  return Object.keys(groups).sort().map(date => {
+    const dayShifts = groups[date];
+    
+    // Sort shifts within the day by start time
+    dayShifts.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+    const totalHours = dayShifts.reduce((sum, s) => sum + s.totalHours, 0);
+    const totalBreak = dayShifts.reduce((sum, s) => sum + s.breakMinutes, 0);
+    
+    // Combine time ranges (e.g., "09:00-12:00 / 13:00-18:00")
+    // We use startTime field to store the combined string for display purposes
+    const timeRanges = dayShifts.map(s => `${s.startTime}-${s.endTime}`).join(' / ');
+    
+    // Combine notes
+    const combinedNotes = dayShifts
+      .map(s => s.notes)
+      .filter(n => n && n.trim() !== '')
+      .join('; ');
+
+    return {
+      id: `group-${date}`,
+      date,
+      startTime: timeRanges, // Display string containing all intervals
+      endTime: '',           // Unused in aggregated view
+      breakMinutes: totalBreak,
+      totalHours: parseFloat(totalHours.toFixed(2)),
+      notes: combinedNotes
+    };
+  });
+};
+
 // Parse Legacy CSV (For Demo Button)
 export const parseCSV = (csvText: string): Shift[] => {
   const lines = csvText.trim().split('\n');
@@ -42,7 +84,8 @@ export const parseCSV = (csvText: string): Shift[] => {
       notes
     });
   }
-  return shifts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  // Return raw shifts, aggregation happens in App or specific logic
+  return shifts;
 };
 
 // Fetch from Google Apps Script Web App
@@ -73,7 +116,7 @@ export const fetchGASData = async (url: string): Promise<Shift[]> => {
         };
     }).filter((s: Shift) => s.date && s.startTime && s.endTime); // Filter invalid rows
 
-    return shifts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return shifts;
 
   } catch (error) {
     console.error("Error fetching sheet:", error);

@@ -48,11 +48,10 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-orange-100 print:bg-gray-100">
             <tr>
-              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">日期</th>
-              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">上班時間</th>
-              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">下班時間</th>
-              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider">休息 (分)</th>
-              <th className="px-4 py-3 text-right font-bold text-gray-700 uppercase tracking-wider">工時</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider w-[120px]">日期</th>
+              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">時間記錄 (上班-下班)</th>
+              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider w-[80px]">休息(分)</th>
+              <th className="px-4 py-3 text-right font-bold text-gray-700 uppercase tracking-wider w-[80px]">工時</th>
               <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">備註</th>
             </tr>
           </thead>
@@ -60,17 +59,16 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
             {report.shifts.map((shift, index) => (
               <tr key={shift.id} className={index % 2 === 0 ? 'bg-white' : 'bg-orange-50/30 print:bg-gray-50'}>
                 <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">{shift.date}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-gray-600">{shift.startTime}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-gray-600">{shift.endTime}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-center text-gray-600">{shift.breakMinutes}</td>
+                <td className="px-4 py-3 text-gray-600 font-mono">{shift.startTime}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-center text-gray-600">{shift.breakMinutes > 0 ? shift.breakMinutes : '-'}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-right font-bold text-gray-900">{shift.totalHours}</td>
-                <td className="px-4 py-3 text-gray-500 truncate max-w-[200px]">{shift.notes}</td>
+                <td className="px-4 py-3 text-gray-500 truncate max-w-[150px]">{shift.notes}</td>
               </tr>
             ))}
           </tbody>
           <tfoot className="bg-gray-50 font-bold border-t border-gray-200">
              <tr>
-                <td colSpan={4} className="px-4 py-3 text-right text-gray-700">總計</td>
+                <td colSpan={3} className="px-4 py-3 text-right text-gray-700">總計</td>
                 <td className="px-4 py-3 text-right text-orange-700">{report.totalHours.toFixed(2)}</td>
                 <td></td>
              </tr>
