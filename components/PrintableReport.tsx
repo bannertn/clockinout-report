@@ -51,7 +51,7 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
               <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider w-[120px]">日期</th>
               <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">時間記錄 (上班-下班)</th>
               <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider w-[80px]">休息(分)</th>
-              <th className="px-4 py-3 text-right font-bold text-gray-700 uppercase tracking-wider w-[80px]">工時</th>
+              <th className="px-4 py-3 text-right font-bold text-gray-700 uppercase tracking-wider w-[80px]">當日工時</th>
               <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">備註</th>
             </tr>
           </thead>

@@ -358,7 +358,7 @@ const App: React.FC = () => {
                 <tr className="text-gray-500 border-b border-gray-100 text-sm">
                   <th className="px-6 py-3 font-medium">日期</th>
                   <th className="px-6 py-3 font-medium">時間記錄 (上班-下班)</th>
-                  <th className="px-6 py-3 font-medium text-right">總工時</th>
+                  <th className="px-6 py-3 font-medium text-right">當日工時</th>
                   <th className="px-6 py-3 font-medium">備註</th>
                 </tr>
               </thead>

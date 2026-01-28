@@ -1,9 +1,37 @@
 import { Shift } from '../types';
 
+// Helper to normalize time strings (e.g., "9:00" -> "09:00")
+const normalizeTime = (timeStr: string): string => {
+  if (!timeStr) return '00:00';
+  const parts = timeStr.trim().split(':');
+  if (parts.length < 2) return timeStr;
+  const h = parts[0].padStart(2, '0');
+  const m = parts[1].padStart(2, '0');
+  // Optional: handle seconds if present, though usually not needed for this app
+  return `${h}:${m}`;
+};
+
+// Helper to normalize date strings (e.g., "2023/1/1" -> "2023-01-01")
+const normalizeDate = (dateStr: string): string => {
+  if (!dateStr) return '';
+  // Replace slashes with dashes
+  const cleanStr = dateStr.trim().replace(/\//g, '-');
+  const parts = cleanStr.split('-');
+  if (parts.length === 3) {
+    // Assume YYYY-MM-DD format
+    return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+  }
+  return cleanStr;
+};
+
 // Helper to calculate hours
 const calculateHours = (date: string, startTime: string, endTime: string, breakMinutes: number): number => {
-    const start = new Date(`${date}T${startTime}`);
-    const end = new Date(`${date}T${endTime}`);
+    const nDate = normalizeDate(date);
+    const nStart = normalizeTime(startTime);
+    const nEnd = normalizeTime(endTime);
+
+    const start = new Date(`${nDate}T${nStart}`);
+    const end = new Date(`${nDate}T${nEnd}`);
     
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
 
@@ -13,17 +41,19 @@ const calculateHours = (date: string, startTime: string, endTime: string, breakM
         diffMs += 24 * 60 * 60 * 1000;
     }
     
-    return parseFloat(((diffMs / (1000 * 60 * 60)) - (breakMinutes / 60)).toFixed(2));
+    const hours = (diffMs / (1000 * 60 * 60)) - (breakMinutes / 60);
+    return Math.max(0, parseFloat(hours.toFixed(2)));
 };
 
 // Group shifts by date to consolidate multiple entries into one daily row
 export const groupShiftsByDate = (shifts: Shift[]): Shift[] => {
   const groups: { [key: string]: Shift[] } = {};
   
-  // 1. Group by date
+  // 1. Group by date (normalized)
   shifts.forEach(s => {
-    if (!groups[s.date]) groups[s.date] = [];
-    groups[s.date].push(s);
+    const nDate = normalizeDate(s.date);
+    if (!groups[nDate]) groups[nDate] = [];
+    groups[nDate].push(s);
   });
 
   // 2. Aggregate and Sort
@@ -31,14 +61,20 @@ export const groupShiftsByDate = (shifts: Shift[]): Shift[] => {
     const dayShifts = groups[date];
     
     // Sort shifts within the day by start time
-    dayShifts.sort((a, b) => a.startTime.localeCompare(b.startTime));
+    dayShifts.sort((a, b) => {
+        const tA = normalizeTime(a.startTime);
+        const tB = normalizeTime(b.startTime);
+        return tA.localeCompare(tB);
+    });
 
+    // Sum up the pre-calculated totals of each shift
     const totalHours = dayShifts.reduce((sum, s) => sum + s.totalHours, 0);
     const totalBreak = dayShifts.reduce((sum, s) => sum + s.breakMinutes, 0);
     
     // Combine time ranges (e.g., "09:00-12:00 / 13:00-18:00")
-    // We use startTime field to store the combined string for display purposes
-    const timeRanges = dayShifts.map(s => `${s.startTime}-${s.endTime}`).join(' / ');
+    const timeRanges = dayShifts.map(s => 
+        `${normalizeTime(s.startTime)}-${normalizeTime(s.endTime)}`
+    ).join(' / ');
     
     // Combine notes
     const combinedNotes = dayShifts
@@ -74,17 +110,17 @@ export const parseCSV = (csvText: string): Shift[] => {
     const breakMinutes = parts[3] ? parseInt(parts[3]) || 0 : 0;
     const notes = parts[4] || '';
 
+    // Calculate immediately using normalized values
     shifts.push({
       id: `demo-${i}`,
-      date,
-      startTime,
-      endTime,
+      date: normalizeDate(date),
+      startTime: normalizeTime(startTime),
+      endTime: normalizeTime(endTime),
       breakMinutes,
       totalHours: calculateHours(date, startTime, endTime, breakMinutes),
       notes
     });
   }
-  // Return raw shifts, aggregation happens in App or specific logic
   return shifts;
 };
 
@@ -98,7 +134,6 @@ export const fetchGASData = async (url: string): Promise<Shift[]> => {
     
     // Convert JSON array to Shift objects
     const shifts: Shift[] = data.map((item: any, index: number) => {
-        // Ensure data exists, fallback to empty strings if row is incomplete
         const date = item.date || '';
         const startTime = item.startTime || '';
         const endTime = item.endTime || '';
@@ -107,14 +142,14 @@ export const fetchGASData = async (url: string): Promise<Shift[]> => {
 
         return {
             id: `gas-${index}`,
-            date,
-            startTime,
-            endTime,
+            date: normalizeDate(date),
+            startTime: normalizeTime(startTime),
+            endTime: normalizeTime(endTime),
             breakMinutes,
             totalHours: calculateHours(date, startTime, endTime, breakMinutes),
             notes
         };
-    }).filter((s: Shift) => s.date && s.startTime && s.endTime); // Filter invalid rows
+    }).filter((s: Shift) => s.date && s.startTime && s.endTime); 
 
     return shifts;
 
