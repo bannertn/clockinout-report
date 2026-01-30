@@ -29,15 +29,15 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
         </div>
         <div className="border-2 border-black p-4 rounded-lg bg-gray-50">
             <p className="text-[10px] font-black uppercase text-black mb-1">當月總工時</p>
-            <p className="text-2xl font-black text-black">{report.totalHours.toFixed(2)} HR</p>
+            <p className="text-2xl font-black text-black">{(report.totalHours || 0).toFixed(2)} HR</p>
         </div>
         <div className="border-2 border-black p-4 rounded-lg bg-gray-50">
             <p className="text-[10px] font-black uppercase text-black mb-1">核定時薪</p>
             <p className="text-2xl font-black text-black">${report.hourlyRate}</p>
         </div>
         <div className="bg-black text-white p-4 rounded-lg flex flex-col justify-center items-center">
-            <p className="text-[10px] font-bold uppercase opacity-80 mb-1">應付實發工資</p>
-            <p className="text-3xl font-black">${Math.round(report.totalPay).toLocaleString()}</p>
+            <p className="text-[10px] font-bold uppercase opacity-80 mb-1 text-white">應付實發工資</p>
+            <p className="text-3xl font-black text-white">${Math.round(report.totalPay).toLocaleString()}</p>
         </div>
       </div>
 
@@ -45,12 +45,12 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
         <table className="w-full text-sm">
           <thead className="bg-black text-white">
             <tr>
-              <th className="px-4 py-4 text-left font-black uppercase border-r border-gray-800">日期</th>
-              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800">上班打卡</th>
-              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800">下班打卡</th>
-              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800">休息</th>
-              <th className="px-4 py-4 text-right font-black uppercase border-r border-gray-800">當日工時</th>
-              <th className="px-4 py-4 text-left font-black uppercase">工作備註</th>
+              <th className="px-4 py-4 text-left font-black uppercase border-r border-gray-800 text-white">日期</th>
+              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800 text-white">上班打卡</th>
+              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800 text-white">下班打卡</th>
+              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800 text-white">休息</th>
+              <th className="px-4 py-4 text-right font-black uppercase border-r border-gray-800 text-white">當日工時</th>
+              <th className="px-4 py-4 text-left font-black uppercase text-white">工作備註</th>
             </tr>
           </thead>
           <tbody className="divide-y-2 divide-black">
@@ -60,15 +60,19 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
                 <td className="px-4 py-4 text-center font-mono font-black text-black border-r-2 border-black">{shift.startTime}</td>
                 <td className="px-4 py-4 text-center font-mono font-black text-black border-r-2 border-black">{shift.endTime}</td>
                 <td className="px-4 py-4 text-center font-black text-black border-r-2 border-black">{shift.breakMinutes || '0'}m</td>
-                <td className="px-4 py-4 text-right font-black text-black border-r-2 border-black text-base">{Number(shift.totalHours).toFixed(2)}</td>
-                <td className="px-4 py-4 text-black font-bold text-xs italic">{shift.notes}</td>
+                <td className="px-4 py-4 text-right font-black text-black border-r-2 border-black text-base">
+                  {(Number(shift.totalHours) || 0).toFixed(2)}
+                </td>
+                <td className="px-4 py-4 text-black font-black text-xs italic">{shift.notes}</td>
               </tr>
             ))}
           </tbody>
           <tfoot className="bg-gray-100 font-black border-t-[3px] border-black">
             <tr>
-              <td colSpan={4} className="px-4 py-5 text-right text-black uppercase text-base">月總計 (Total Monthly Hours)</td>
-              <td className="px-4 py-5 text-right text-black text-2xl border-r-2 border-black">{report.totalHours.toFixed(2)}</td>
+              <td colSpan={4} className="px-4 py-5 text-right text-black uppercase text-base font-black">月總計 (Total Monthly Hours)</td>
+              <td className="px-4 py-5 text-right text-black text-2xl border-r-2 border-black font-black">
+                {(report.totalHours || 0).toFixed(2)}
+              </td>
               <td className="bg-white"></td>
             </tr>
           </tfoot>
@@ -77,16 +81,16 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
 
       <div className="mt-20 grid grid-cols-2 gap-20 px-10">
         <div className="border-t-[3px] border-black pt-4 text-center">
-            <p className="font-black uppercase text-sm mb-1">員工簽名</p>
-            <p className="text-[10px] font-bold">Employee Signature</p>
+            <p className="font-black uppercase text-sm mb-1 text-black">員工簽名</p>
+            <p className="text-[10px] font-black text-black">Employee Signature</p>
         </div>
         <div className="border-t-[3px] border-black pt-4 text-center">
-            <p className="font-black uppercase text-sm mb-1">主管審核簽章</p>
-            <p className="text-[10px] font-bold">Manager Approval</p>
+            <p className="font-black uppercase text-sm mb-1 text-black">主管審核簽章</p>
+            <p className="text-[10px] font-black text-black">Manager Approval</p>
         </div>
       </div>
       
-      <div className="mt-16 text-center text-[10px] font-black text-black uppercase tracking-[0.4em] opacity-30">
+      <div className="mt-16 text-center text-[10px] font-black text-black uppercase tracking-[0.4em]">
         Validated via WarmSync Automated Reporting System
       </div>
     </div>

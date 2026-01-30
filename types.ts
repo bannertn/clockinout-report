@@ -1,5 +1,6 @@
 export interface Shift {
   id: string;
+  employeeName?: string; // 用於過濾特定員工
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm
