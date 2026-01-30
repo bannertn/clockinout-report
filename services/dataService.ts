@@ -1,83 +1,107 @@
 import { Shift } from '../types';
 
-// Helper to normalize time strings (e.g., "9:00" -> "09:00")
+// Helper to normalize time strings (handles "2026-01-28 16:16" -> "16:16")
 const normalizeTime = (timeStr: string): string => {
-  if (!timeStr) return '00:00';
-  const parts = timeStr.trim().split(':');
-  if (parts.length < 2) return timeStr;
+  if (!timeStr || timeStr === '00:00') return '';
+  let t = timeStr.trim();
+  
+  if (t.includes(' ')) {
+    const parts = t.split(' ');
+    t = parts[parts.length - 1];
+  }
+
+  const parts = t.split(':');
+  if (parts.length < 2) return "";
+  
   const h = parts[0].padStart(2, '0');
   const m = parts[1].padStart(2, '0');
-  // Optional: handle seconds if present, though usually not needed for this app
   return `${h}:${m}`;
 };
 
-// Helper to normalize date strings (e.g., "2023/1/1" -> "2023-01-01")
 const normalizeDate = (dateStr: string): string => {
   if (!dateStr) return '';
-  // Replace slashes with dashes
-  const cleanStr = dateStr.trim().replace(/\//g, '-');
+  let d = dateStr.trim();
+  if (d.includes('T')) d = d.split('T')[0];
+  if (d.includes(' ')) d = d.split(' ')[0];
+
+  const cleanStr = d.replace(/\//g, '-');
   const parts = cleanStr.split('-');
+  
   if (parts.length === 3) {
-    // Assume YYYY-MM-DD format
+    if (parts[2].length === 4) {
+        return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+    }
     return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
   }
   return cleanStr;
 };
 
-// Helper to calculate hours
+// Calculation for a single pair of start and end
 const calculateHours = (date: string, startTime: string, endTime: string, breakMinutes: number): number => {
+    if (!startTime || !endTime) return 0;
+
     const nDate = normalizeDate(date);
-    const nStart = normalizeTime(startTime);
-    const nEnd = normalizeTime(endTime);
+    const dParts = nDate.split('-').map(Number);
+    const sParts = startTime.split(':').map(Number);
+    const eParts = endTime.split(':').map(Number);
 
-    const start = new Date(`${nDate}T${nStart}`);
-    const end = new Date(`${nDate}T${nEnd}`);
-    
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+    if (dParts.length !== 3 || sParts.length < 2 || eParts.length < 2) return 0;
 
-    let diffMs = end.getTime() - start.getTime();
-    if (diffMs < 0) {
-        // Assume overnight shift, add 24 hours
-        diffMs += 24 * 60 * 60 * 1000;
+    try {
+        const start = new Date(dParts[0], dParts[1] - 1, dParts[2], sParts[0], sParts[1], 0);
+        let end = new Date(dParts[0], dParts[1] - 1, dParts[2], eParts[0], eParts[1], 0);
+        
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
+
+        if (end.getTime() <= start.getTime()) {
+            end.setDate(end.getDate() + 1);
+        }
+
+        const diffMs = end.getTime() - start.getTime();
+        const totalHours = (diffMs / (1000 * 60 * 60)) - ((breakMinutes || 0) / 60);
+        
+        const result = parseFloat(totalHours.toFixed(2));
+        return isNaN(result) ? 0 : Math.max(0, result);
+    } catch (e) {
+        return 0;
     }
-    
-    const hours = (diffMs / (1000 * 60 * 60)) - (breakMinutes / 60);
-    return Math.max(0, parseFloat(hours.toFixed(2)));
 };
 
-// Group shifts by date to consolidate multiple entries into one daily row
 export const groupShiftsByDate = (shifts: Shift[]): Shift[] => {
   const groups: { [key: string]: Shift[] } = {};
   
-  // 1. Group by date (normalized)
   shifts.forEach(s => {
     const nDate = normalizeDate(s.date);
     if (!groups[nDate]) groups[nDate] = [];
     groups[nDate].push(s);
   });
 
-  // 2. Aggregate and Sort
   return Object.keys(groups).sort().map(date => {
-    const dayShifts = groups[date];
+    const dayRows = groups[date];
     
-    // Sort shifts within the day by start time
-    dayShifts.sort((a, b) => {
-        const tA = normalizeTime(a.startTime);
-        const tB = normalizeTime(b.startTime);
-        return tA.localeCompare(tB);
-    });
+    // Pick the first non-empty startTime and first non-empty endTime across ALL rows for this date
+    let firstStartTime = '';
+    let firstEndTime = '';
+    let totalBreak = 0;
+    
+    for (const row of dayRows) {
+        const s = normalizeTime(row.startTime);
+        const e = normalizeTime(row.endTime);
+        if (!firstStartTime && s) firstStartTime = s;
+        if (!firstEndTime && e) firstEndTime = e;
+        totalBreak += (Number(row.breakMinutes) || 0);
+    }
 
-    // Sum up the pre-calculated totals of each shift
-    const totalHours = dayShifts.reduce((sum, s) => sum + s.totalHours, 0);
-    const totalBreak = dayShifts.reduce((sum, s) => sum + s.breakMinutes, 0);
+    // Handle the case where no explicit "End Time" was found, 
+    // but there are multiple rows with "Start Time" (treating the second start as an end)
+    if (!firstEndTime && dayRows.length > 1) {
+        const secondaryStart = normalizeTime(dayRows[1].startTime);
+        if (secondaryStart) firstEndTime = secondaryStart;
+    }
+
+    const dailyHours = calculateHours(date, firstStartTime, firstEndTime, totalBreak);
     
-    // Combine time ranges (e.g., "09:00-12:00 / 13:00-18:00")
-    const timeRanges = dayShifts.map(s => 
-        `${normalizeTime(s.startTime)}-${normalizeTime(s.endTime)}`
-    ).join(' / ');
-    
-    // Combine notes
-    const combinedNotes = dayShifts
+    const combinedNotes = dayRows
       .map(s => s.notes)
       .filter(n => n && n.trim() !== '')
       .join('; ');
@@ -85,16 +109,15 @@ export const groupShiftsByDate = (shifts: Shift[]): Shift[] => {
     return {
       id: `group-${date}`,
       date,
-      startTime: timeRanges, // Display string containing all intervals
-      endTime: '',           // Unused in aggregated view
+      startTime: firstStartTime || '未打卡',
+      endTime: firstEndTime || '未打卡',
       breakMinutes: totalBreak,
-      totalHours: parseFloat(totalHours.toFixed(2)),
+      totalHours: dailyHours,
       notes: combinedNotes
     };
   });
 };
 
-// Parse Legacy CSV (For Demo Button)
 export const parseCSV = (csvText: string): Shift[] => {
   const lines = csvText.trim().split('\n');
   const shifts: Shift[] = [];
@@ -106,55 +129,36 @@ export const parseCSV = (csvText: string): Shift[] => {
     const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
     if (parts.length < 3) continue;
 
-    const [date, startTime, endTime] = parts;
-    const breakMinutes = parts[3] ? parseInt(parts[3]) || 0 : 0;
-    const notes = parts[4] || '';
-
-    // Calculate immediately using normalized values
     shifts.push({
       id: `demo-${i}`,
-      date: normalizeDate(date),
-      startTime: normalizeTime(startTime),
-      endTime: normalizeTime(endTime),
-      breakMinutes,
-      totalHours: calculateHours(date, startTime, endTime, breakMinutes),
-      notes
+      date: normalizeDate(parts[0]),
+      startTime: parts[1] || '',
+      endTime: parts[2] || '',
+      breakMinutes: parts[3] ? parseInt(parts[3]) || 0 : 0,
+      totalHours: 0, // Will be calculated during grouping
+      notes: parts[4] || ''
     });
   }
   return shifts;
 };
 
-// Fetch from Google Apps Script Web App
 export const fetchGASData = async (url: string): Promise<Shift[]> => {
   try {
     const response = await fetch(url);
-    if (!response.ok) throw new Error('Failed to fetch from GAS');
-    
+    if (!response.ok) throw new Error('Failed to fetch');
     const data = await response.json();
     
-    // Convert JSON array to Shift objects
-    const shifts: Shift[] = data.map((item: any, index: number) => {
-        const date = item.date || '';
-        const startTime = item.startTime || '';
-        const endTime = item.endTime || '';
-        const breakMinutes = parseInt(item.breakMinutes) || 0;
-        const notes = item.notes || '';
-
-        return {
-            id: `gas-${index}`,
-            date: normalizeDate(date),
-            startTime: normalizeTime(startTime),
-            endTime: normalizeTime(endTime),
-            breakMinutes,
-            totalHours: calculateHours(date, startTime, endTime, breakMinutes),
-            notes
-        };
-    }).filter((s: Shift) => s.date && s.startTime && s.endTime); 
-
-    return shifts;
-
+    return data.map((item: any, index: number) => ({
+        id: `gas-${index}`,
+        date: normalizeDate(item.date || ''),
+        startTime: item.startTime || '',
+        endTime: item.endTime || '',
+        breakMinutes: parseInt(item.breakMinutes) || 0,
+        totalHours: 0, 
+        notes: item.notes || ''
+    }));
   } catch (error) {
-    console.error("Error fetching sheet:", error);
+    console.error("GAS Fetch Error:", error);
     throw error;
   }
 };

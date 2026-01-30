@@ -10,84 +10,84 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
   const currentDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <div className="bg-white text-black p-8 max-w-[210mm] mx-auto min-h-[297mm] shadow-lg print:shadow-none print:w-full print:max-w-none">
-      {/* Header */}
-      <div className="border-b-2 border-orange-500 pb-4 mb-6 flex justify-between items-end">
+    <div className="bg-white text-black p-10 max-w-[210mm] mx-auto min-h-[297mm] shadow-none border-[3px] border-black print:border-none print:w-full print:max-w-none print:p-0">
+      <div className="border-b-[6px] border-black pb-6 mb-8 flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">月度工時報表</h1>
-          <p className="text-gray-500 mt-1">Monthly Timesheet Report</p>
+          <h1 className="text-5xl font-black text-black uppercase tracking-tighter">工作月報表</h1>
+          <p className="text-black font-black text-base mt-2 uppercase tracking-widest">Monthly Attendance & Salary Report</p>
         </div>
         <div className="text-right">
-          <p className="text-lg font-semibold">{userName}</p>
-          <p className="text-sm text-gray-500">列印日期: {currentDate}</p>
+          <p className="text-2xl font-black text-black">{userName}</p>
+          <p className="text-sm font-black text-black mt-1">報表日期: {currentDate}</p>
         </div>
       </div>
 
-      {/* Summary Box */}
-      <div className="bg-orange-50 border border-orange-100 rounded-lg p-6 mb-8 flex justify-between items-center print:bg-gray-50 print:border-gray-200">
-        <div>
-            <p className="text-sm text-gray-500 uppercase tracking-wide">月份</p>
-            <p className="text-2xl font-bold text-orange-900">{report.month}</p>
+      <div className="grid grid-cols-4 gap-4 mb-10">
+        <div className="border-2 border-black p-4 rounded-lg bg-gray-50">
+            <p className="text-[10px] font-black uppercase text-black mb-1">結算月份</p>
+            <p className="text-2xl font-black text-black">{report.month}</p>
         </div>
-        <div>
-            <p className="text-sm text-gray-500 uppercase tracking-wide">總工時</p>
-            <p className="text-2xl font-bold text-orange-900">{report.totalHours.toFixed(2)} <span className="text-sm font-normal text-gray-600">小時</span></p>
+        <div className="border-2 border-black p-4 rounded-lg bg-gray-50">
+            <p className="text-[10px] font-black uppercase text-black mb-1">當月總工時</p>
+            <p className="text-2xl font-black text-black">{report.totalHours.toFixed(2)} HR</p>
         </div>
-        <div>
-            <p className="text-sm text-gray-500 uppercase tracking-wide">時薪</p>
-            <p className="text-2xl font-bold text-orange-900">${report.hourlyRate}</p>
+        <div className="border-2 border-black p-4 rounded-lg bg-gray-50">
+            <p className="text-[10px] font-black uppercase text-black mb-1">核定時薪</p>
+            <p className="text-2xl font-black text-black">${report.hourlyRate}</p>
         </div>
-        <div className="bg-white px-4 py-2 rounded shadow-sm print:shadow-none print:border print:border-gray-300">
-            <p className="text-sm text-gray-500 uppercase tracking-wide">本月應付薪資</p>
-            <p className="text-3xl font-extrabold text-red-600">${Math.round(report.totalPay).toLocaleString()}</p>
+        <div className="bg-black text-white p-4 rounded-lg flex flex-col justify-center items-center">
+            <p className="text-[10px] font-bold uppercase opacity-80 mb-1">應付實發工資</p>
+            <p className="text-3xl font-black">${Math.round(report.totalPay).toLocaleString()}</p>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-orange-100 print:bg-gray-100">
+      <div className="border-[3px] border-black rounded-xl overflow-hidden mb-10">
+        <table className="w-full text-sm">
+          <thead className="bg-black text-white">
             <tr>
-              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider w-[120px]">日期</th>
-              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">時間記錄 (上班-下班)</th>
-              <th className="px-4 py-3 text-center font-bold text-gray-700 uppercase tracking-wider w-[80px]">休息(分)</th>
-              <th className="px-4 py-3 text-right font-bold text-gray-700 uppercase tracking-wider w-[80px]">當日工時</th>
-              <th className="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-wider">備註</th>
+              <th className="px-4 py-4 text-left font-black uppercase border-r border-gray-800">日期</th>
+              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800">上班打卡</th>
+              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800">下班打卡</th>
+              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800">休息</th>
+              <th className="px-4 py-4 text-right font-black uppercase border-r border-gray-800">當日工時</th>
+              <th className="px-4 py-4 text-left font-black uppercase">工作備註</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
-            {report.shifts.map((shift, index) => (
-              <tr key={shift.id} className={index % 2 === 0 ? 'bg-white' : 'bg-orange-50/30 print:bg-gray-50'}>
-                <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">{shift.date}</td>
-                <td className="px-4 py-3 text-gray-600 font-mono">{shift.startTime}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-center text-gray-600">{shift.breakMinutes > 0 ? shift.breakMinutes : '-'}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-right font-bold text-gray-900">{shift.totalHours}</td>
-                <td className="px-4 py-3 text-gray-500 truncate max-w-[150px]">{shift.notes}</td>
+          <tbody className="divide-y-2 divide-black">
+            {report.shifts.map((shift) => (
+              <tr key={shift.id} className="hover:bg-gray-100">
+                <td className="px-4 py-4 font-black text-black border-r-2 border-black">{shift.date}</td>
+                <td className="px-4 py-4 text-center font-mono font-black text-black border-r-2 border-black">{shift.startTime}</td>
+                <td className="px-4 py-4 text-center font-mono font-black text-black border-r-2 border-black">{shift.endTime}</td>
+                <td className="px-4 py-4 text-center font-black text-black border-r-2 border-black">{shift.breakMinutes || '0'}m</td>
+                <td className="px-4 py-4 text-right font-black text-black border-r-2 border-black text-base">{Number(shift.totalHours).toFixed(2)}</td>
+                <td className="px-4 py-4 text-black font-bold text-xs italic">{shift.notes}</td>
               </tr>
             ))}
           </tbody>
-          <tfoot className="bg-gray-50 font-bold border-t border-gray-200">
-             <tr>
-                <td colSpan={3} className="px-4 py-3 text-right text-gray-700">總計</td>
-                <td className="px-4 py-3 text-right text-orange-700">{report.totalHours.toFixed(2)}</td>
-                <td></td>
-             </tr>
+          <tfoot className="bg-gray-100 font-black border-t-[3px] border-black">
+            <tr>
+              <td colSpan={4} className="px-4 py-5 text-right text-black uppercase text-base">月總計 (Total Monthly Hours)</td>
+              <td className="px-4 py-5 text-right text-black text-2xl border-r-2 border-black">{report.totalHours.toFixed(2)}</td>
+              <td className="bg-white"></td>
+            </tr>
           </tfoot>
         </table>
       </div>
 
-      {/* Signature Section */}
-      <div className="mt-16 pt-8 border-t border-dashed border-gray-300 flex justify-between items-end print:flex">
-        <div className="w-1/3">
-          <p className="mb-8 border-b border-gray-400 pb-2">員工簽名 (Employee)</p>
+      <div className="mt-20 grid grid-cols-2 gap-20 px-10">
+        <div className="border-t-[3px] border-black pt-4 text-center">
+            <p className="font-black uppercase text-sm mb-1">員工簽名</p>
+            <p className="text-[10px] font-bold">Employee Signature</p>
         </div>
-        <div className="w-1/3">
-          <p className="mb-8 border-b border-gray-400 pb-2">主管簽核 (Manager)</p>
+        <div className="border-t-[3px] border-black pt-4 text-center">
+            <p className="font-black uppercase text-sm mb-1">主管審核簽章</p>
+            <p className="text-[10px] font-bold">Manager Approval</p>
         </div>
       </div>
       
-      <div className="mt-8 text-center text-xs text-gray-400">
-         Generated by WarmSync Timesheet
+      <div className="mt-16 text-center text-[10px] font-black text-black uppercase tracking-[0.4em] opacity-30">
+        Validated via WarmSync Automated Reporting System
       </div>
     </div>
   );
