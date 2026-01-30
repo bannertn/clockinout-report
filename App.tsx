@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FileSpreadsheet, 
@@ -61,15 +60,14 @@ const App: React.FC = () => {
       const dailyShifts = groupShiftsByDate(filtered);
       if (dailyShifts.length === 0) return null;
 
+      // 累加已四捨五入的每日工時
       const totalHours = dailyShifts.reduce((acc, curr) => acc + (Number(curr.totalHours) || 0), 0);
-      // Ensure totalHours for the month is also rounded to 2 decimal places
-      const roundedTotalHours = Math.round((totalHours + Number.EPSILON) * 100) / 100;
       
       return {
         month: dailyShifts[0].date.substring(0, 7),
-        totalHours: roundedTotalHours,
+        totalHours: totalHours,
         hourlyRate,
-        totalPay: Math.floor(roundedTotalHours * hourlyRate),
+        totalPay: Math.floor(totalHours * hourlyRate),
         shifts: dailyShifts
       };
     } catch (e) { return null; }
@@ -167,7 +165,7 @@ const App: React.FC = () => {
         </div>
         <div className="bg-white p-10 rounded-3xl border-4 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
           <p className="text-xs font-black uppercase text-black mb-2 tracking-widest">總計工時 (HR)</p>
-          <p className="text-5xl font-black tracking-tight text-black">{(report?.totalHours || 0).toFixed(2)}</p>
+          <p className="text-5xl font-black tracking-tight text-black">{report?.totalHours || 0}</p>
         </div>
         <div className="bg-white p-10 rounded-3xl border-4 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
           <p className="text-xs font-black uppercase text-black mb-2 tracking-widest">結算月份</p>
@@ -247,7 +245,7 @@ const App: React.FC = () => {
                     <td className="px-8 py-6 text-center font-mono font-black text-black">{shift.startTime}</td>
                     <td className="px-8 py-6 text-center font-mono font-black text-black">{shift.endTime}</td>
                     <td className="px-8 py-6 text-right font-black text-2xl text-black">
-                      {(Number(shift.totalHours) || 0).toFixed(2)}
+                      {shift.totalHours}
                     </td>
                     <td className="px-8 py-6 font-black text-black min-w-[200px]">{shift.notes}</td>
                   </tr>

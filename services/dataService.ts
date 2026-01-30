@@ -1,3 +1,4 @@
+
 import { Shift } from '../types';
 
 // 將字串中的所有空白（含全形）移除，用於標題或姓名比對
@@ -50,14 +51,16 @@ const calculateHours = (date: string, startTime: string, endTime: string, breakM
     try {
         const start = new Date(dParts[0], dParts[1] - 1, dParts[2], sParts[0], sParts[1], 0);
         let end = new Date(dParts[0], dParts[1] - 1, dParts[2], eParts[0], eParts[1], 0);
+        // Fixed typo: iNaN -> isNaN
         if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
         if (end.getTime() <= start.getTime()) end.setDate(end.getDate() + 1);
         const diffMs = end.getTime() - start.getTime();
         
-        // 四捨五入到小數點第二位
+        // 計算總工時
         const totalHours = (diffMs / (1000 * 60 * 60)) - ((breakMinutes || 0) / 60);
-        // 使用加倍數再四捨五入的方式確保精確
-        return isNaN(totalHours) ? 0 : Math.max(0, Math.round((totalHours + Number.EPSILON) * 100) / 100);
+        
+        // 使用四捨五入至整數 (依使用者要求)
+        return isNaN(totalHours) ? 0 : Math.max(0, Math.round(totalHours));
     } catch (e) { return 0; }
 };
 
@@ -143,14 +146,12 @@ export const fetchGASData = async (url: string, targetName: string = ''): Promis
     if (rows.length === 0) return { shifts: [], mappedKeys: {} };
     const keys = Object.keys(rows[0]);
 
-    // 強制對應 D 為姓名 (員工姓名優先權高於關鍵字)
     const nameKey = keys.includes('D') ? 'D' : (keys.find(k => ['員工姓名', '姓名', '員工', 'Name'].some(kw => cleanString(k).includes(kw))) || keys[3]);
     const dateKey = keys.includes('A') ? 'A' : (keys.find(k => ['日期', 'date', 'Timestamp'].some(kw => cleanString(k).includes(kw))) || keys[0]);
     const startKey = keys.includes('B') ? 'B' : (keys.find(k => ['上班', 'startTime', 'start'].some(kw => cleanString(k).includes(kw))) || keys[1]);
     const endKey = keys.includes('C') ? 'C' : (keys.find(k => ['下班', 'endTime', 'end'].some(kw => cleanString(k).includes(kw))) || keys[2]);
     const noteKey = keys.includes('E') ? 'E' : (keys.find(k => ['備註', 'notes', 'Remark'].some(kw => cleanString(k).includes(kw))) || keys[4]);
     
-    // 只有在不是 D 的情況下才尋找休息欄位，避免搶奪姓名欄位
     const brkKey = keys.find(k => k !== nameKey && ['休息', 'break'].some(kw => cleanString(k).toLowerCase().includes(kw.toLowerCase())));
 
     const shifts = rows.map((item: any, index: number) => ({

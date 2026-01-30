@@ -29,7 +29,7 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
         </div>
         <div className="border-2 border-black p-4 rounded-lg bg-gray-50">
             <p className="text-[10px] font-black uppercase text-black mb-1">當月總工時</p>
-            <p className="text-2xl font-black text-black">{(report.totalHours || 0).toFixed(2)} HR</p>
+            <p className="text-2xl font-black text-black">{report.totalHours} HR</p>
         </div>
         <div className="border-2 border-black p-4 rounded-lg bg-gray-50">
             <p className="text-[10px] font-black uppercase text-black mb-1">核定時薪</p>
@@ -61,7 +61,7 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
                 <td className="px-4 py-4 text-center font-mono font-black text-black border-r-2 border-black">{shift.endTime}</td>
                 <td className="px-4 py-4 text-center font-black text-black border-r-2 border-black">{shift.breakMinutes || '0'}m</td>
                 <td className="px-4 py-4 text-right font-black text-black border-r-2 border-black text-base">
-                  {(Number(shift.totalHours) || 0).toFixed(2)}
+                  {shift.totalHours}
                 </td>
                 <td className="px-4 py-4 text-black font-black text-xs italic">{shift.notes}</td>
               </tr>
@@ -71,7 +71,7 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
             <tr>
               <td colSpan={4} className="px-4 py-5 text-right text-black uppercase text-base font-black">月總計 (Total Monthly Hours)</td>
               <td className="px-4 py-5 text-right text-black text-2xl border-r-2 border-black font-black">
-                {(report.totalHours || 0).toFixed(2)}
+                {report.totalHours}
               </td>
               <td className="bg-white"></td>
             </tr>
@@ -91,7 +91,7 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
       </div>
       
       <div className="mt-16 text-center text-[10px] font-black text-black uppercase tracking-[0.4em]">
-        Validated via WarmSync Automated Reporting System
+        Validated via ALEX SYSTEM Automated Reporting System
       </div>
     </div>
   );

@@ -1,16 +1,10 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { MonthlyReport } from '../types';
 
-// Initialize Gemini
-// Note: In a real production app, ensure API_KEY is set in environment
-const getAi = () => {
-    // Fallback for demo purposes if env is missing, but adhering to instructions to use process.env
-    const apiKey = process.env.API_KEY || ''; 
-    return new GoogleGenAI({ apiKey });
-};
-
 export const generateMonthlyInsight = async (report: MonthlyReport): Promise<string> => {
-    const ai = getAi();
+    // Initialize Gemini directly using process.env.API_KEY right before making the call as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     // Create a simplified text representation of the data to save tokens
     const dataSummary = `
@@ -39,6 +33,7 @@ export const generateMonthlyInsight = async (report: MonthlyReport): Promise<str
             model: 'gemini-3-flash-preview',
             contents: prompt,
         });
+        // Accessing the .text property directly as recommended (not a method call)
         return response.text || "無法生成分析，請稍後再試。";
     } catch (error) {
         console.error("Gemini Error:", error);
