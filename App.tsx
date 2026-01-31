@@ -286,7 +286,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className={`min-h-screen ${appState === AppState.PRINT_PREVIEW ? 'bg-gray-900' : 'bg-[#FFF7ED]'}`}>
+    <div className={`min-h-screen ${appState === AppState.PRINT_PREVIEW ? 'bg-white' : 'bg-[#FFF7ED]'}`}>
       {appState === AppState.SETUP && renderSetup()}
       {appState === AppState.DASHBOARD && renderDashboard()}
       {appState === AppState.PRINT_PREVIEW && report && (
