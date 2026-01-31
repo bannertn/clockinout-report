@@ -2,16 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FileSpreadsheet, 
   Printer, 
-  DollarSign, 
-  Clock, 
-  Calendar, 
   Settings, 
   AlertCircle, 
   Search, 
   UserCheck, 
-  TableProperties, 
-  Database, 
-  ArrowRight 
+  CalendarDays
 } from 'lucide-react';
 import { AppState, MonthlyReport, Shift } from './types';
 import { fetchGASData, groupShiftsByDate } from './services/dataService';
@@ -28,6 +23,11 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mappedKeys, setMappedKeys] = useState<any>(null);
+
+  // 新增年份與月份狀態，預設為當前年月
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
 
   useEffect(() => {
     const savedName = localStorage.getItem('warmSync_userName');
@@ -51,27 +51,29 @@ const App: React.FC = () => {
   const report: MonthlyReport | null = useMemo(() => {
     if (rawShifts.length === 0) return null;
     try {
-      const target = cleanStr(userName);
+      const targetName = cleanStr(userName);
+      const targetPeriod = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
+
       const filtered = rawShifts.filter(s => {
-        if (!target) return true;
-        return cleanStr(s.employeeName || '') === target;
+        const nameMatches = !targetName || cleanStr(s.employeeName || '') === targetName;
+        const dateMatches = s.date.startsWith(targetPeriod);
+        return nameMatches && dateMatches;
       });
 
       const dailyShifts = groupShiftsByDate(filtered);
       if (dailyShifts.length === 0) return null;
 
-      // 累加已四捨五入的每日工時
       const totalHours = dailyShifts.reduce((acc, curr) => acc + (Number(curr.totalHours) || 0), 0);
       
       return {
-        month: dailyShifts[0].date.substring(0, 7),
+        month: targetPeriod,
         totalHours: totalHours,
         hourlyRate,
         totalPay: Math.floor(totalHours * hourlyRate),
         shifts: dailyShifts
       };
     } catch (e) { return null; }
-  }, [rawShifts, hourlyRate, userName]);
+  }, [rawShifts, hourlyRate, userName, selectedYear, selectedMonth]);
 
   const performFetch = async (url: string) => {
     setLoading(true);
@@ -90,64 +92,99 @@ const App: React.FC = () => {
     } finally { setLoading(false); }
   };
 
-  const renderSetup = () => (
-    <div className="max-w-3xl mx-auto px-4 py-12 text-black">
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center p-4 bg-orange-100 rounded-full mb-6 text-orange-600 shadow-inner">
-          <FileSpreadsheet className="w-12 h-12" />
-        </div>
-        <h1 className="text-4xl font-black mb-4 uppercase tracking-tighter text-black">ALEX SYSTEM Timesheet</h1>
-        <p className="text-lg font-bold text-black">同步 Google Sheets，自動完成薪資結算。</p>
-      </div>
+  const renderSetup = () => {
+    const years = Array.from({ length: 10 }, (_, i) => now.getFullYear() - 5 + i);
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-      <div className="bg-white rounded-3xl shadow-2xl border-4 border-black overflow-hidden">
-        <div className="p-10 bg-gray-50 border-b-4 border-black space-y-8">
-          <h2 className="text-2xl font-black flex items-center gap-3 text-black"><Settings className="w-6 h-6" /> 報表條件設定</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            <div className="space-y-3">
-              <label className="block text-sm font-black uppercase tracking-widest text-black">員工姓名 (NAME)</label>
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-12 text-black">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center p-4 bg-orange-100 rounded-full mb-6 text-orange-600 shadow-inner">
+            <FileSpreadsheet className="w-12 h-12" />
+          </div>
+          <h1 className="text-4xl font-black mb-4 uppercase tracking-tighter text-black">ALEX SYSTEM Timesheet</h1>
+          <p className="text-lg font-bold text-black">同步 Google Sheets，自動完成薪資結算。</p>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow-2xl border-4 border-black overflow-hidden">
+          <div className="p-10 bg-gray-50 border-b-4 border-black space-y-8">
+            <h2 className="text-2xl font-black flex items-center gap-3 text-black"><Settings className="w-6 h-6" /> 報表條件設定</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <label className="block text-sm font-black uppercase tracking-widest text-black">員工姓名 (NAME)</label>
+                <input 
+                  type="text" 
+                  value={userName} 
+                  onChange={e => setUserName(e.target.value)} 
+                  className="w-full px-6 py-4 rounded-2xl border-4 border-black bg-black text-white font-black text-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)] focus:scale-[1.02] transition-transform outline-none" 
+                  placeholder="例如：alex lu"
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="block text-sm font-black uppercase tracking-widest text-black">時薪 (TWD)</label>
+                <input 
+                  type="number" 
+                  value={hourlyRate} 
+                  onChange={e => setHourlyRate(Number(e.target.value))} 
+                  className="w-full px-6 py-4 rounded-2xl border-4 border-black bg-black text-white font-black text-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)] focus:scale-[1.02] transition-transform outline-none" 
+                />
+              </div>
+            </div>
+
+            <div className="pt-6 border-t-2 border-black/10">
+              <h3 className="text-sm font-black uppercase tracking-widest text-black mb-4 flex items-center gap-2">
+                <CalendarDays className="w-4 h-4" /> 選擇查詢年份與月份
+              </h3>
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black uppercase text-black/60">年份 Year</label>
+                  <select 
+                    value={selectedYear} 
+                    onChange={e => setSelectedYear(Number(e.target.value))}
+                    className="w-full px-6 py-4 rounded-2xl border-4 border-black bg-white font-black text-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)] outline-none cursor-pointer"
+                  >
+                    {years.map(y => <option key={y} value={y}>{y} 年</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black uppercase text-black/60">月份 Month</label>
+                  <select 
+                    value={selectedMonth} 
+                    onChange={e => setSelectedMonth(Number(e.target.value))}
+                    className="w-full px-6 py-4 rounded-2xl border-4 border-black bg-white font-black text-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)] outline-none cursor-pointer"
+                  >
+                    {months.map(m => <option key={m} value={m}>{m} 月</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-10 space-y-6">
+            <h2 className="text-xl font-black text-black">資料來源 (GAS網址)</h2>
+            <div className="flex flex-col sm:flex-row gap-4">
               <input 
                 type="text" 
-                value={userName} 
-                onChange={e => setUserName(e.target.value)} 
-                className="w-full px-6 py-4 rounded-2xl border-4 border-black bg-black text-white font-black text-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)] focus:scale-[1.02] transition-transform outline-none" 
-                placeholder="例如：alex lu"
+                value={gasUrl} 
+                onChange={e => setGasUrl(e.target.value)} 
+                className="flex-1 px-6 py-4 rounded-2xl border-4 border-black bg-white font-mono text-sm shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)] outline-none text-black font-bold" 
+                placeholder="https://script.google.com/..." 
               />
+              <button 
+                onClick={() => performFetch(gasUrl)} 
+                disabled={loading || !gasUrl} 
+                className="bg-black text-white px-10 py-4 rounded-2xl font-black uppercase hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {loading ? '同步中...' : '讀取資料'}
+              </button>
             </div>
-            <div className="space-y-3">
-              <label className="block text-sm font-black uppercase tracking-widest text-black">時薪 (TWD)</label>
-              <input 
-                type="number" 
-                value={hourlyRate} 
-                onChange={e => setHourlyRate(Number(e.target.value))} 
-                className="w-full px-6 py-4 rounded-2xl border-4 border-black bg-black text-white font-black text-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,0.2)] focus:scale-[1.02] transition-transform outline-none" 
-              />
-            </div>
+            {error && <div className="p-5 bg-red-100 border-4 border-red-900 text-red-900 rounded-2xl font-bold flex gap-3 items-center"><AlertCircle className="shrink-0" /> {error}</div>}
           </div>
-        </div>
-        <div className="p-10 space-y-6">
-          <h2 className="text-xl font-black text-black">資料來源(GAS網址 )</h2>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <input 
-              type="text" 
-              value={gasUrl} 
-              onChange={e => setGasUrl(e.target.value)} 
-              className="flex-1 px-6 py-4 rounded-2xl border-4 border-black bg-white font-mono text-sm shadow-[6px_6px_0px_0px_rgba(0,0,0,0.1)] outline-none text-black font-bold" 
-              placeholder="https://script.google.com/..." 
-            />
-            <button 
-              onClick={() => performFetch(gasUrl)} 
-              disabled={loading || !gasUrl} 
-              className="bg-black text-white px-10 py-4 rounded-2xl font-black uppercase hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {loading ? '同步中...' : '讀取資料'}
-            </button>
-          </div>
-          {error && <div className="p-5 bg-red-100 border-4 border-red-900 text-red-900 rounded-2xl font-bold flex gap-3 items-center"><AlertCircle className="shrink-0" /> {error}</div>}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderDashboard = () => (
     <div className="max-w-6xl mx-auto px-4 py-10">
@@ -168,16 +205,16 @@ const App: React.FC = () => {
           <p className="text-5xl font-black tracking-tight text-black">{report?.totalHours || 0}</p>
         </div>
         <div className="bg-white p-10 rounded-3xl border-4 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
-          <p className="text-xs font-black uppercase text-black mb-2 tracking-widest">結算月份</p>
-          <p className="text-5xl font-black tracking-tight text-black">{report?.month || '--'}</p>
+          <p className="text-xs font-black uppercase text-black mb-2 tracking-widest">結算區間</p>
+          <p className="text-5xl font-black tracking-tight text-black">{selectedYear}/{selectedMonth}</p>
         </div>
       </div>
 
       {(!report || report.shifts.length === 0) ? (
         <div className="bg-white border-4 border-black p-12 rounded-[40px] text-center shadow-xl">
           <Search className="w-20 h-20 mx-auto text-black mb-6" />
-          <h3 className="text-3xl font-black mb-4 uppercase tracking-tighter text-black">找不到「{userName}」的記錄</h3>
-          <p className="text-black font-bold mb-8">雖然讀取成功，但過濾姓名後無資料。請檢查下方的欄位映射：</p>
+          <h3 className="text-3xl font-black mb-4 uppercase tracking-tighter text-black">找不到「{userName}」在 {selectedYear}/{selectedMonth} 的記錄</h3>
+          <p className="text-black font-bold mb-8">雖然讀取成功，但過濾姓名或月份後無資料。</p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <div className="bg-gray-100 p-8 rounded-3xl text-left border-2 border-black/20">
@@ -196,23 +233,13 @@ const App: React.FC = () => {
             </div>
 
             <div className="bg-blue-50 p-8 rounded-3xl text-left border-2 border-black/20">
-                <p className="text-sm font-black mb-4 flex items-center gap-2 text-black font-black uppercase">欄位對應資訊：</p>
-                <div className="space-y-3 text-sm font-bold text-black font-black">
-                  <div className="flex justify-between items-center border-b border-black/10 pb-1">
-                    <span className="text-xs uppercase">姓名 (Name)</span>
-                    <span className="bg-black text-white px-2 py-0.5 rounded">{mappedKeys?.name || '未找到'}</span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-black/10 pb-1">
-                    <span className="text-xs uppercase">日期 (Date)</span>
-                    <span className="bg-black text-white px-2 py-0.5 rounded">{mappedKeys?.date || '未找到'}</span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-black/10 pb-1">
-                    <span className="text-xs uppercase">上班 (Start)</span>
-                    <span className="bg-black text-white px-2 py-0.5 rounded">{mappedKeys?.start || '未找到'}</span>
-                  </div>
-                </div>
-                <p className="text-[10px] text-black mt-6 font-black uppercase leading-tight bg-yellow-300 p-2 rounded border border-black">
-                  💡 我們已將 D 欄鎖定為姓名，請檢查您的 Google Sheet D 欄是否包含「{userName}」。
+                <p className="text-sm font-black mb-4 flex items-center gap-2 text-black font-black uppercase">提示：</p>
+                <p className="text-sm text-black font-bold leading-relaxed mb-4">
+                  1. 請確認 Google Sheet 中的日期格式為 YYYY-MM-DD 或 YYYY/MM/DD。<br/>
+                  2. 目前查詢的是 <b>{selectedYear} 年 {selectedMonth} 月</b> 的資料。
+                </p>
+                <p className="text-[10px] text-black font-black uppercase leading-tight bg-yellow-300 p-2 rounded border border-black">
+                  💡 如果該月份沒有打卡紀錄，報表將無法生成。
                 </p>
             </div>
           </div>
@@ -223,7 +250,7 @@ const App: React.FC = () => {
         <div className="bg-white rounded-[40px] border-4 border-black overflow-hidden shadow-2xl">
           <div className="p-6 bg-gray-50 border-b-4 border-black flex justify-between items-center">
             <h3 className="font-black text-xl uppercase tracking-tighter flex items-center gap-2 text-black">
-              <UserCheck className="w-6 h-6" /> 打卡明細：{userName}
+              <UserCheck className="w-6 h-6" /> 打卡明細：{userName} ({selectedYear}/{selectedMonth})
             </h3>
             <span className="bg-black text-white px-4 py-1 rounded-full text-xs font-black uppercase">{report.shifts.length} 筆記錄</span>
           </div>
