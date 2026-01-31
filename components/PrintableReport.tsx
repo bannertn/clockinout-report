@@ -55,20 +55,20 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
           <tbody className="divide-y-2 divide-black">
             {report.shifts.map((shift) => (
               <tr key={shift.id} className="hover:bg-gray-100">
-                <td className="px-4 py-4 font-black text-black border-r-2 border-black">{shift.date}</td>
-                <td className="px-4 py-4 text-center font-mono font-black text-black border-r-2 border-black">{shift.startTime}</td>
-                <td className="px-4 py-4 text-center font-mono font-black text-black border-r-2 border-black">{shift.endTime}</td>
-                <td className="px-4 py-4 text-right font-black text-black border-r-2 border-black text-base">
+                <td className="px-4 py-2 font-black text-black border-r-2 border-black">{shift.date}</td>
+                <td className="px-4 py-2 text-center font-mono font-black text-black border-r-2 border-black">{shift.startTime}</td>
+                <td className="px-4 py-2 text-center font-mono font-black text-black border-r-2 border-black">{shift.endTime}</td>
+                <td className="px-4 py-2 text-right font-black text-black border-r-2 border-black text-base">
                   {shift.totalHours}
                 </td>
-                <td className="px-4 py-4 text-black font-black text-xs italic">{shift.notes}</td>
+                <td className="px-4 py-2 text-black font-black text-xs italic">{shift.notes}</td>
               </tr>
             ))}
           </tbody>
           <tfoot className="bg-gray-100 font-black border-t-[3px] border-black">
             <tr>
-              <td colSpan={3} className="px-4 py-5 text-right text-black uppercase text-base font-black">月總計 (Total Monthly Hours)</td>
-              <td className="px-4 py-5 text-right text-black text-2xl border-r-2 border-black font-black">
+              <td colSpan={3} className="px-4 py-3 text-right text-black uppercase text-base font-black">月總計 (Total Monthly Hours)</td>
+              <td className="px-4 py-3 text-right text-black text-2xl border-r-2 border-black font-black">
                 {report.totalHours}
               </td>
               <td className="bg-white"></td>
