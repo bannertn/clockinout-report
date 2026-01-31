@@ -48,7 +48,6 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
               <th className="px-4 py-4 text-left font-black uppercase border-r border-gray-800 text-white">日期</th>
               <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800 text-white">上班打卡</th>
               <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800 text-white">下班打卡</th>
-              <th className="px-4 py-4 text-center font-black uppercase border-r border-gray-800 text-white">休息</th>
               <th className="px-4 py-4 text-right font-black uppercase border-r border-gray-800 text-white">當日工時</th>
               <th className="px-4 py-4 text-left font-black uppercase text-white">工作備註</th>
             </tr>
@@ -59,7 +58,6 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
                 <td className="px-4 py-4 font-black text-black border-r-2 border-black">{shift.date}</td>
                 <td className="px-4 py-4 text-center font-mono font-black text-black border-r-2 border-black">{shift.startTime}</td>
                 <td className="px-4 py-4 text-center font-mono font-black text-black border-r-2 border-black">{shift.endTime}</td>
-                <td className="px-4 py-4 text-center font-black text-black border-r-2 border-black">{shift.breakMinutes || '0'}m</td>
                 <td className="px-4 py-4 text-right font-black text-black border-r-2 border-black text-base">
                   {shift.totalHours}
                 </td>
@@ -69,7 +67,7 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
           </tbody>
           <tfoot className="bg-gray-100 font-black border-t-[3px] border-black">
             <tr>
-              <td colSpan={4} className="px-4 py-5 text-right text-black uppercase text-base font-black">月總計 (Total Monthly Hours)</td>
+              <td colSpan={3} className="px-4 py-5 text-right text-black uppercase text-base font-black">月總計 (Total Monthly Hours)</td>
               <td className="px-4 py-5 text-right text-black text-2xl border-r-2 border-black font-black">
                 {report.totalHours}
               </td>
@@ -81,8 +79,8 @@ export const PrintableReport: React.FC<PrintableReportProps> = ({ report, userNa
 
       <div className="mt-20 grid grid-cols-2 gap-20 px-10">
         <div className="border-t-[3px] border-black pt-4 text-center">
-            <p className="font-black uppercase text-sm mb-1 text-black">員工簽名</p>
-            <p className="text-[10px] font-black text-black">Employee Signature</p>
+            <p className="font-black uppercase text-sm mb-1 text-black">員工姓名</p>
+            <p className="text-[10px] font-black text-black">Employee Name</p>
         </div>
         <div className="border-t-[3px] border-black pt-4 text-center">
             <p className="font-black uppercase text-sm mb-1 text-black">主管審核簽章</p>

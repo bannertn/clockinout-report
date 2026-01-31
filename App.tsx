@@ -105,7 +105,7 @@ const App: React.FC = () => {
           <h2 className="text-2xl font-black flex items-center gap-3 text-black"><Settings className="w-6 h-6" /> 報表條件設定</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-3">
-              <label className="block text-sm font-black uppercase tracking-widest text-black">員工姓名 (對應 D 欄)</label>
+              <label className="block text-sm font-black uppercase tracking-widest text-black">員工姓名 (NAME)</label>
               <input 
                 type="text" 
                 value={userName} 
@@ -126,7 +126,7 @@ const App: React.FC = () => {
           </div>
         </div>
         <div className="p-10 space-y-6">
-          <h2 className="text-xl font-black text-black">Google Apps Script 網址</h2>
+          <h2 className="text-xl font-black text-black">資料來源(GAS網址 )</h2>
           <div className="flex flex-col sm:flex-row gap-4">
             <input 
               type="text" 
