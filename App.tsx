@@ -9,19 +9,20 @@ import {
   CalendarDays
 } from 'lucide-react';
 import { AppState, MonthlyReport, Shift } from './types';
-import { fetchGASData, groupShiftsByDate } from './services/dataService';
+import { fetchGASData, groupShiftsByDate, formatName } from './services/dataService';
 import { PrintableReport } from './components/PrintableReport';
 
 const cleanStr = (s: string) => s.replace(/[\s\u3000]/g, '').toLowerCase();
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.SETUP);
-  const [gasUrl, setGasUrl] = useState('https://script.google.com/macros/s/AKfycbyd-Y2KI-sW3zXPp7aAVJ_tKZrs2jZMzduNAxFBcG5s2lFiXEhVksft2yP9DYpHslXe/exec');
+  const [gasUrl, setGasUrl] = useState('');
   const [rawShifts, setRawShifts] = useState<Shift[]>([]);
   const [hourlyRate, setHourlyRate] = useState<number>(196); 
   const [userName, setUserName] = useState('alex lu');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mappedKeys, setMappedKeys] = useState<any>(null);
 
   // 新增年份與月份狀態，預設為當前年月
   const now = new Date();
@@ -50,7 +51,8 @@ const App: React.FC = () => {
   const report: MonthlyReport | null = useMemo(() => {
     if (rawShifts.length === 0) return null;
     try {
-      const targetName = cleanStr(userName);
+      const formattedUserName = formatName(userName);
+      const targetName = cleanStr(formattedUserName);
       const targetPeriod = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
 
       const filtered = rawShifts.filter(s => {
@@ -78,8 +80,9 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchGASData(url);
+      const result = await fetchGASData(url, userName);
       setRawShifts(result.shifts);
+      setMappedKeys(result.mappedKeys);
       setAppState(AppState.DASHBOARD);
       
       localStorage.setItem('warmSync_gasUrl', url);
@@ -248,7 +251,7 @@ const App: React.FC = () => {
         <div className="bg-white rounded-[40px] border-4 border-black overflow-hidden shadow-2xl">
           <div className="p-6 bg-gray-50 border-b-4 border-black flex justify-between items-center">
             <h3 className="font-black text-xl uppercase tracking-tighter flex items-center gap-2 text-black">
-              <UserCheck className="w-6 h-6" /> 打卡明細：{userName} ({selectedYear}/{selectedMonth})
+              <UserCheck className="w-6 h-6" /> 打卡明細：{formatName(userName)} ({selectedYear}/{selectedMonth})
             </h3>
             <span className="bg-black text-white px-4 py-1 rounded-full text-xs font-black uppercase">{report.shifts.length} 筆記錄</span>
           </div>
@@ -292,7 +295,7 @@ const App: React.FC = () => {
           <div className="fixed top-8 left-8 no-print z-50">
             <button onClick={() => setAppState(AppState.DASHBOARD)} className="bg-white border-4 border-black px-8 py-3 rounded-full font-black shadow-2xl hover:scale-105 transition-transform flex items-center gap-2 text-black">← 返回管理介面</button>
           </div>
-          <PrintableReport report={report} userName={userName} />
+          <PrintableReport report={report} userName={formatName(userName)} />
         </div>
       )}
     </div>

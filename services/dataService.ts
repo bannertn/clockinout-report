@@ -1,6 +1,17 @@
 
 import { Shift } from '../types';
 
+export const formatName = (name: string): string => {
+  if (!name) return '';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 2) {
+    // If both parts are English letters, add a space between them
+    const isEnglish = /^[A-Za-z]+$/.test(parts[0]) && /^[A-Za-z]+$/.test(parts[1]);
+    return parts[1] + (isEnglish ? ' ' : '') + parts[0];
+  }
+  return name;
+};
+
 // 將字串中的所有空白（含全形）移除，用於標題或姓名比對
 const cleanString = (str: any): string => {
   if (str === null || str === undefined) return '';
@@ -177,7 +188,7 @@ export const fetchGASData = async (url: string, targetName: string = ''): Promis
 
     const shifts = rows.map((item: any, index: number) => ({
       id: `gas-${index}`,
-      employeeName: String(item[nameKey] || '').trim(),
+      employeeName: formatName(String(item[nameKey] || '')).trim(),
       date: normalizeDate(item[dateKey]),
       startTime: normalizeTime(String(item[startKey] || '')),
       endTime: normalizeTime(String(item[endKey] || '')),
