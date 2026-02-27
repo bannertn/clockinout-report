@@ -56,11 +56,21 @@ const calculateHours = (date: string, startTime: string, endTime: string, breakM
         if (end.getTime() <= start.getTime()) end.setDate(end.getDate() + 1);
         const diffMs = end.getTime() - start.getTime();
         
-        // 計算總工時
-        const totalHours = (diffMs / (1000 * 60 * 60)) - ((breakMinutes || 0) / 60);
+        // 計算總分鐘數
+        let totalMinutes = (diffMs / (1000 * 60)) - (breakMinutes || 0);
+        if (isNaN(totalMinutes) || totalMinutes < 0) return 0;
         
-        // 使用四捨五入至整數 (依使用者要求)
-        return isNaN(totalHours) ? 0 : Math.max(0, Math.round(totalHours));
+        const hours = Math.floor(totalMinutes / 60);
+        const mins = totalMinutes % 60;
+        
+        let finalHours = hours;
+        if (mins > 45) {
+            finalHours += 1;
+        } else if (mins > 15) {
+            finalHours += 0.5;
+        }
+        
+        return finalHours;
     } catch (e) { return 0; }
 };
 
@@ -146,11 +156,22 @@ export const fetchGASData = async (url: string, targetName: string = ''): Promis
     if (rows.length === 0) return { shifts: [], mappedKeys: {} };
     const keys = Object.keys(rows[0]);
 
-    const nameKey = keys.includes('D') ? 'D' : (keys.find(k => ['員工姓名', '姓名', '員工', 'Name'].some(kw => cleanString(k).includes(kw))) || keys[3]);
-    const dateKey = keys.includes('A') ? 'A' : (keys.find(k => ['日期', 'date', 'Timestamp'].some(kw => cleanString(k).includes(kw))) || keys[0]);
-    const startKey = keys.includes('B') ? 'B' : (keys.find(k => ['上班', 'startTime', 'start'].some(kw => cleanString(k).includes(kw))) || keys[1]);
-    const endKey = keys.includes('C') ? 'C' : (keys.find(k => ['下班', 'endTime', 'end'].some(kw => cleanString(k).includes(kw))) || keys[2]);
-    const noteKey = keys.includes('E') ? 'E' : (keys.find(k => ['備註', 'notes', 'Remark'].some(kw => cleanString(k).includes(kw))) || keys[4]);
+    const findKey = (keywords: string[]) => keys.find(k => {
+        const clean = cleanString(k).toLowerCase();
+        return keywords.some(kw => clean.includes(kw.toLowerCase()));
+    });
+
+    const startKw = ['上班', 'startTime', 'start', 'begin', 'in', 'arrival', '簽到'];
+    const endKw = ['下班', 'endTime', 'end', 'finish', 'out', 'departure', 'leave', '簽退'];
+    const dateKw = ['日期', 'date', 'Timestamp', 'day'];
+    const nameKw = ['員工姓名', '姓名', '員工', 'Name', 'employee'];
+    const noteKw = ['備註', 'notes', 'Remark', 'memo'];
+
+    const nameKey = findKey(nameKw) || (keys.includes('D') ? 'D' : keys[3]);
+    const dateKey = findKey(dateKw) || (keys.includes('A') ? 'A' : keys[0]);
+    const startKey = findKey(startKw) || (keys.includes('B') ? 'B' : keys[1]);
+    const endKey = findKey(endKw) || (keys.includes('C') ? 'C' : keys[2]);
+    const noteKey = findKey(noteKw) || (keys.includes('E') ? 'E' : keys[4]);
     
     const brkKey = keys.find(k => k !== nameKey && ['休息', 'break'].some(kw => cleanString(k).toLowerCase().includes(kw.toLowerCase())));
 
@@ -158,8 +179,8 @@ export const fetchGASData = async (url: string, targetName: string = ''): Promis
       id: `gas-${index}`,
       employeeName: String(item[nameKey] || '').trim(),
       date: normalizeDate(item[dateKey]),
-      startTime: String(item[startKey] || ''),
-      endTime: String(item[endKey] || ''),
+      startTime: normalizeTime(String(item[startKey] || '')),
+      endTime: normalizeTime(String(item[endKey] || '')),
       breakMinutes: brkKey ? (parseInt(item[brkKey]) || 0) : 0,
       totalHours: 0,
       notes: String(item[noteKey] || '')

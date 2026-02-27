@@ -16,13 +16,12 @@ const cleanStr = (s: string) => s.replace(/[\s\u3000]/g, '').toLowerCase();
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.SETUP);
-  const [gasUrl, setGasUrl] = useState('');
+  const [gasUrl, setGasUrl] = useState('https://script.google.com/macros/s/AKfycbyd-Y2KI-sW3zXPp7aAVJ_tKZrs2jZMzduNAxFBcG5s2lFiXEhVksft2yP9DYpHslXe/exec');
   const [rawShifts, setRawShifts] = useState<Shift[]>([]);
   const [hourlyRate, setHourlyRate] = useState<number>(196); 
   const [userName, setUserName] = useState('alex lu');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mappedKeys, setMappedKeys] = useState<any>(null);
 
   // 新增年份與月份狀態，預設為當前年月
   const now = new Date();
@@ -79,9 +78,8 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchGASData(url, userName);
+      const result = await fetchGASData(url);
       setRawShifts(result.shifts);
-      setMappedKeys(result.mappedKeys);
       setAppState(AppState.DASHBOARD);
       
       localStorage.setItem('warmSync_gasUrl', url);
